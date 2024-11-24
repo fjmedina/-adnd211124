@@ -1,39 +1,51 @@
 import { createClient } from '@supabase/supabase-js';
 
-export const supabaseUrl = 'https://pwhdsfaldvkbjdvbzsyl.supabase.co';
-export const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3aGRzZmFsZHZrYmpkdmJ6c3lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNTMyMDksImV4cCI6MjA0NzcyOTIwOX0.2Scr_ArVhh0Yylw06zIuE9IHTJfLikPneOpTwwleBpc';
+// Configuración usando variables de entorno
+export const supabaseUrl = process.env.SUPABASE_URL!;
+export const supabaseKey = process.env.SUPABASE_KEY!;
+
+// Verificación para evitar problemas si faltan claves
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('SUPABASE_URL o SUPABASE_KEY no están configurados.');
+}
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Initialize admin user if it doesn't exist
-const initAdminUser = async () => {
-  const { data: existingUser } = await supabase
-    .from('users')
-    .select()
-    .eq('email', 'admin@advertisingnotdead.com')
-    .single();
+// Initialize admin user if it doesn't exist (solo en desarrollo)
+if (process.env.NODE_ENV === 'development') {
+  const initAdminUser = async () => {
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select()
+      .eq('email', 'pancho@advertisingnotdead.cl')
+      .single();
 
-  if (!existingUser) {
-    const { data: { user }, error } = await supabase.auth.signUp({
-      email: 'admin@advertisingnotdead.com',
-      password: 'AND2024!',
-    });
+    if (!existingUser) {
+      const { data: { user }, error } = await supabase.auth.signUp({
+        email: 'pancho@advertisingnotdead.cl',
+        password: 'AND2024!',
+      });
 
-    if (!error && user) {
-      await supabase.from('users').insert([
-        {
-          id: user.id,
-          email: user.email,
-          role: 'admin',
-        },
-      ]);
+      if (!error && user) {
+        await supabase.from('users').insert([
+          {
+            id: user.id,
+            email: user.email,
+            role: 'admin',
+          },
+        ]);
+      } else if (error) {
+        console.error('Error al crear el usuario admin:', error.message);
+      }
     }
-  }
-};
+  };
 
-initAdminUser();
+  initAdminUser().catch((error) =>
+    console.error('Error inicializando admin user:', error.message)
+  );
+}
 
-// Rest of the types and functions remain the same...
+// Interfaces
 export interface Case {
   id: string;
   title: string;
@@ -61,20 +73,28 @@ export interface User {
   created_at: string;
 }
 
+// Funciones de autenticación
 export const signIn = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
-  if (error) throw error;
+  if (error) {
+    console.error('Error al iniciar sesión:', error.message);
+    throw error;
+  }
   return data;
 };
 
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  if (error) {
+    console.error('Error al cerrar sesión:', error.message);
+    throw error;
+  }
 };
 
+// Funciones relacionadas con `cases`
 export const getCases = async () => {
   const { data, error } = await supabase
     .from('cases')
@@ -94,6 +114,7 @@ export const createCase = async (caseData: Omit<Case, 'id' | 'created_at' | 'upd
   return data;
 };
 
+// Funciones relacionadas con `leads`
 export const getLeads = async () => {
   const { data, error } = await supabase
     .from('leads')
@@ -114,6 +135,7 @@ export const updateLeadStatus = async (id: string, status: Lead['status']) => {
   return data;
 };
 
+// Funciones relacionadas con `users`
 export const getUsers = async () => {
   const { data, error } = await supabase
     .from('users')
