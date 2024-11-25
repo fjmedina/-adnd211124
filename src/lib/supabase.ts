@@ -1,18 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Configuración usando variables de entorno
-export const supabaseUrl = process.env.SUPABASE_URL!;
-export const supabaseKey = process.env.SUPABASE_KEY!;
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
+export const supabaseKey = import.meta.env.VITE_SUPABASE_KEY!;
 
 // Verificación para evitar problemas si faltan claves
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error('SUPABASE_URL o SUPABASE_KEY no están configurados.');
+  throw new Error('VITE_SUPABASE_URL o VITE_SUPABASE_KEY no están configurados.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Initialize admin user if it doesn't exist (solo en desarrollo)
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.MODE === 'development') {
   const initAdminUser = async () => {
     const { data: existingUser } = await supabase
       .from('users')
